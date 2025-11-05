@@ -70,16 +70,16 @@
             {{ error }}
           </p>
         </div>
-
-        <div class="form-actions">
-          <button type="button" @click="$emit('cancel')" class="btn btn-secondary">
-            取消
-          </button>
-          <button type="submit" :disabled="isLoading || !isFormValid" class="btn btn-primary">
-            {{ isLoading ? '保存中...' : (isEdit ? '更新' : '创建') }}
-          </button>
-        </div>
       </form>
+
+      <div class="form-actions">
+        <button type="button" @click="$emit('cancel')" class="btn btn-secondary">
+          取消
+        </button>
+        <button type="submit" @click="handleSubmit" :disabled="isLoading || !isFormValid" class="btn btn-primary">
+          {{ isLoading ? '保存中...' : (isEdit ? '更新' : '创建') }}
+        </button>
+      </div>
     </div>
   </div>
 </template>
@@ -231,22 +231,28 @@ onMounted(() => {
 }
 
 .form-container {
-  background: #2a2a2a;
+  background: transparent;
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 12px;
-  padding: 2rem;
   width: 90%;
   max-width: 700px;
   max-height: 90vh;
-  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
   box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3);
+  overflow: hidden;
 }
 
 .form-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 1.5rem;
+  padding: 1.5rem 2rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  flex-shrink: 0;
+  background: #2a2a2a;
+  border-top-left-radius: 12px;
+  border-top-right-radius: 12px;
 }
 
 .form-header h2 {
@@ -273,6 +279,10 @@ onMounted(() => {
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
+  padding: 2rem;
+  overflow-y: auto;
+  flex: 1;
+  background: #2a2a2a;
 }
 
 .form-group {
@@ -394,9 +404,12 @@ input::placeholder {
   display: flex;
   justify-content: flex-end;
   gap: 1rem;
-  margin-top: 1rem;
-  padding-top: 1rem;
+  padding: 1.5rem 2rem;
   border-top: 1px solid rgba(255, 255, 255, 0.1);
+  flex-shrink: 0;
+  background: #2a2a2a;
+  border-bottom-left-radius: 12px;
+  border-bottom-right-radius: 12px;
 }
 
 .btn {
@@ -406,6 +419,14 @@ input::placeholder {
   cursor: pointer;
   font-size: 0.9rem;
   transition: all 0.2s ease;
+  background: rgba(255, 255, 255, 0.1);
+  color: white;
+}
+
+.btn:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.2);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
 }
 
 .btn-sm {
@@ -420,6 +441,8 @@ input::placeholder {
 
 .btn-primary:hover:not(:disabled) {
   background: #2563eb;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
 }
 
 .btn-primary:disabled {
@@ -434,7 +457,9 @@ input::placeholder {
 }
 
 .btn-secondary:hover {
-  background: rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.25);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(255, 255, 255, 0.1);
 }
 
 .btn-danger {
@@ -444,6 +469,8 @@ input::placeholder {
 
 .btn-danger:hover {
   background: #dc2626;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
 }
 
 /* 滚动条样式 */
