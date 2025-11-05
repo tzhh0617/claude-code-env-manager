@@ -14,74 +14,58 @@
             v-model="formData.name"
             type="text"
             required
-            placeholder="例如: 开发环境"
+            placeholder="例如: MiniMax 环境"
           />
         </div>
 
-        <div class="form-group">
-          <label for="apiKey">API Key *</label>
-          <input
-            id="apiKey"
-            v-model="formData.apiKey"
-            type="password"
-            required
-            placeholder="sk-ant-..."
-          />
-          <button
-            type="button"
-            @click="toggleApiKeyVisibility"
-            class="btn-toggle-visibility"
-          >
-            {{ showApiKey ? '隐藏' : '显示' }}
-          </button>
-        </div>
-
-        <div class="form-group">
-          <label for="baseUrl">Base URL</label>
-          <input
-            id="baseUrl"
-            v-model="formData.baseUrl"
-            type="url"
-            placeholder="https://api.anthropic.com (可选)"
-          />
-        </div>
-
-        <div class="form-group">
-          <label for="model">Model</label>
-          <select id="model" v-model="formData.model">
-            <option value="">默认</option>
-            <option value="claude-3-5-sonnet-20241022">Claude 3.5 Sonnet (20241022)</option>
-            <option value="claude-3-5-haiku-20241022">Claude 3.5 Haiku (20241022)</option>
-            <option value="claude-3-opus-20240229">Claude 3 Opus</option>
-            <option value="claude-3-sonnet-20240229">Claude 3 Sonnet</option>
-            <option value="claude-3-haiku-20240307">Claude 3 Haiku</option>
-          </select>
-        </div>
-
-        <div class="form-row">
-          <div class="form-group">
-            <label for="maxTokens">最大 Token 数</label>
-            <input
-              id="maxTokens"
-              v-model.number="formData.maxTokens"
-              type="number"
-              min="1"
-              max="100000"
-              placeholder="4096"
-            />
+        <div class="env-section">
+          <div class="section-header">
+            <h3>环境变量配置</h3>
+            <div class="section-actions">
+              <button type="button" @click="addCommonVars" class="btn btn-secondary btn-sm">
+                添加常用变量
+              </button>
+              <button type="button" @click="addEnvVar" class="btn btn-primary btn-sm">
+                添加变量
+              </button>
+            </div>
           </div>
 
-          <div class="form-group">
-            <label for="temperature">Temperature</label>
-            <input
-              id="temperature"
-              v-model.number="formData.temperature"
-              type="number"
-              min="0"
-              max="2"
-              step="0.1"
-              placeholder="0.7"
-            />
+          <div class="env-vars-list">
+            <div
+              v-for="(envVar, index) in formData.env"
+              :key="index"
+              class="env-var-item"
+            >
+              <div class="env-var-controls">
+                <input
+                  v-model="envVar.key"
+                  type="text"
+                  placeholder="变量名 (如: ANTHROPIC_AUTH_TOKEN)"
+                  class="env-key-input"
+                  />
+                <input
+                  v-model="envVar.value"
+                  type="text"
+                  placeholder="变量值"
+                  class="env-value-input"
+                />
+                <button
+                  type="button"
+                  @click="removeEnvVar(index)"
+                  class="btn btn-danger btn-sm btn-remove"
+                >
+                  删除
+                </button>
+              </div>
+              <div v-if="getEnvVarDescription(envVar.key)" class="env-var-description">
+                {{ getEnvVarDescription(envVar.key) }}
+              </div>
+              </div>
+
+            <div v-if="formData.env.length === 0" class="empty-env-vars">
+              <p>暂无环境变量，点击"添加变量"开始配置</p>
+            </div>
           </div>
         </div>
 
@@ -95,7 +79,7 @@
           <button type="button" @click="$emit('cancel')" class="btn btn-secondary">
             取消
           </button>
-          <button type="submit" :disabled="isLoading" class="btn btn-primary">
+          <button type="submit" :disabled="isLoading || !isFormValid" class="btn btn-primary">
             {{ isLoading ? '保存中...' : (isEdit ? '更新' : '创建') }}
           </button>
         </div>
@@ -107,8 +91,8 @@
 <script setup lang="ts">
 import { ref, reactive, computed, onMounted } from 'vue'
 import { useEnvironmentStore } from '@/stores/environment'
-import type { ClaudeEnvironment, EnvironmentFormData } from '@/types/environment'
-import { validateEnvironmentForm } from '@/utils/validation'
+import type { ClaudeEnvironment, EnvironmentFormData, EnvVar } from '@/types/environment'
+import { COMMON_ENV_VARS } from '@/types/environment'
 
 interface Props {
   environment?: ClaudeEnvironment | null
@@ -119,6 +103,7 @@ interface Emits {
   (e: 'cancel'): void
 }
 
+
 const props = defineProps<Props>()
 const emit = defineEmits<Emits>()
 
@@ -126,49 +111,79 @@ const environmentStore = useEnvironmentStore()
 
 const isEdit = computed(() => !!props.environment)
 const isLoading = ref(false)
-const showApiKey = ref(false)
 const errors = ref<string[]>([])
 
 const formData = reactive<EnvironmentFormData>({
   name: '',
-  apiKey: '',
-  baseUrl: '',
-  model: '',
-  maxTokens: '',
-  temperature: ''
+  env: []
+})
+
+const isFormValid = computed(() => {
+  return formData.name.trim() !== '' &&
+         formData.env.length > 0 &&
+         formData.env.some(envVar => envVar.key.trim() !== '')
 })
 
 const resetForm = () => {
   formData.name = ''
-  formData.apiKey = ''
-  formData.baseUrl = ''
-  formData.model = ''
-  formData.maxTokens = ''
-  formData.temperature = ''
+  formData.env = []
   errors.value = []
 }
 
 const loadEnvironmentData = () => {
   if (props.environment) {
     formData.name = props.environment.name
-    formData.apiKey = props.environment.apiKey
-    formData.baseUrl = props.environment.baseUrl || ''
-    formData.model = props.environment.model || ''
-    formData.maxTokens = props.environment.maxTokens?.toString() || ''
-    formData.temperature = props.environment.temperature?.toString() || ''
+    formData.env = [...props.environment.env]
+  } else {
+    // 默认添加一些常用的环境变量
+    addCommonVars()
   }
 }
 
-const toggleApiKeyVisibility = () => {
-  showApiKey.value = !showApiKey.value
-  const apiKeyInput = document.getElementById('apiKey') as HTMLInputElement
-  if (apiKeyInput) {
-    apiKeyInput.type = showApiKey.value ? 'text' : 'password'
-  }
+const addEnvVar = () => {
+  formData.env.push({ key: '', value: '' })
 }
+
+const removeEnvVar = (index: number) => {
+  formData.env.splice(index, 1)
+}
+
+const addCommonVars = () => {
+  const existingKeys = new Set(formData.env.map(env => env.key))
+
+  COMMON_ENV_VARS.forEach(commonVar => {
+    if (!existingKeys.has(commonVar.key)) {
+      formData.env.push({
+        key: commonVar.key,
+        value: commonVar.defaultValue
+      })
+    }
+  })
+}
+
+const getEnvVarDescription = (key: string): string => {
+  const commonVar = COMMON_ENV_VARS.find(var_ => var_.key === key)
+  return commonVar?.description || ''
+}
+
 
 const validateForm = (): boolean => {
-  errors.value = validateEnvironmentForm(formData)
+  errors.value = []
+
+  if (!formData.name.trim()) {
+    errors.value.push('环境名称不能为空')
+  }
+
+  if (formData.env.length === 0) {
+    errors.value.push('至少需要添加一个环境变量')
+  }
+
+  // 检查是否有有效的环境变量
+  const validEnvVars = formData.env.filter(envVar => envVar.key.trim())
+  if (validEnvVars.length === 0) {
+    errors.value.push('至少需要一个有效的环境变量')
+  }
+
   return errors.value.length === 0
 }
 
@@ -180,10 +195,19 @@ const handleSubmit = async () => {
   try {
     isLoading.value = true
 
+    // 过滤掉空的环境变量
+    const validEnvVars = formData.env.filter(envVar => envVar.key.trim())
+
     if (isEdit.value && props.environment) {
-      environmentStore.updateEnvironment(props.environment.id, formData)
+      environmentStore.updateEnvironment(props.environment.id, {
+        ...formData,
+        env: validEnvVars
+      })
     } else {
-      environmentStore.addEnvironment(formData)
+      environmentStore.addEnvironment({
+        ...formData,
+        env: validEnvVars
+      })
     }
 
     emit('save')
@@ -226,7 +250,7 @@ onMounted(() => {
   border-radius: 12px;
   padding: 2rem;
   width: 90%;
-  max-width: 500px;
+  max-width: 700px;
   max-height: 90vh;
   overflow-y: auto;
   box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3);
@@ -262,7 +286,7 @@ onMounted(() => {
 .environment-form {
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  gap: 1.5rem;
 }
 
 .form-group {
@@ -271,10 +295,83 @@ onMounted(() => {
   gap: 0.5rem;
 }
 
-.form-row {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
+.env-section {
+  display: flex;
+  flex-direction: column;
   gap: 1rem;
+}
+
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.section-header h3 {
+  margin: 0;
+  color: #fff;
+  font-size: 1.1rem;
+}
+
+.section-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.env-vars-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.env-var-item {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  padding: 1rem;
+}
+
+.env-var-controls {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.env-key-input {
+  flex: 1;
+  min-width: 200px;
+}
+
+.env-value-input {
+  flex: 2;
+  min-width: 200px;
+}
+
+.btn-remove {
+  flex-shrink: 0;
+  width: 60px;
+}
+
+.env-var-description {
+  margin-top: 0.5rem;
+  padding: 0.25rem 0.5rem;
+  background: rgba(59, 130, 246, 0.1);
+  border-left: 3px solid #3b82f6;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 0.8rem;
+  border-radius: 0 4px 4px 0;
+}
+
+
+.empty-env-vars {
+  text-align: center;
+  padding: 2rem;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
+  color: rgba(255, 255, 255, 0.6);
+  border: 1px dashed rgba(255, 255, 255, 0.2);
 }
 
 label {
@@ -283,7 +380,7 @@ label {
   font-size: 0.9rem;
 }
 
-input, select {
+input {
   padding: 0.75rem;
   border: 1px solid rgba(255, 255, 255, 0.2);
   border-radius: 6px;
@@ -293,7 +390,7 @@ input, select {
   transition: all 0.2s ease;
 }
 
-input:focus, select:focus {
+input:focus {
   outline: none;
   border-color: #3b82f6;
   background: rgba(255, 255, 255, 0.08);
@@ -303,25 +400,6 @@ input::placeholder {
   color: rgba(255, 255, 255, 0.4);
 }
 
-.btn-toggle-visibility {
-  position: absolute;
-  right: 0.75rem;
-  top: 2.25rem;
-  background: none;
-  border: none;
-  color: rgba(255, 255, 255, 0.6);
-  font-size: 0.8rem;
-  cursor: pointer;
-  padding: 0.25rem;
-}
-
-.btn-toggle-visibility:hover {
-  color: #fff;
-}
-
-.form-group {
-  position: relative;
-}
 
 .error-messages {
   background: rgba(239, 68, 68, 0.1);
@@ -341,6 +419,8 @@ input::placeholder {
   justify-content: flex-end;
   gap: 1rem;
   margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .btn {
@@ -350,6 +430,11 @@ input::placeholder {
   cursor: pointer;
   font-size: 0.9rem;
   transition: all 0.2s ease;
+}
+
+.btn-sm {
+  padding: 0.5rem 1rem;
+  font-size: 0.8rem;
 }
 
 .btn-primary {
@@ -374,5 +459,33 @@ input::placeholder {
 
 .btn-secondary:hover {
   background: rgba(255, 255, 255, 0.2);
+}
+
+.btn-danger {
+  background: #ef4444;
+  color: white;
+}
+
+.btn-danger:hover {
+  background: #dc2626;
+}
+
+/* 滚动条样式 */
+.form-container::-webkit-scrollbar {
+  width: 8px;
+}
+
+.form-container::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 4px;
+}
+
+.form-container::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 4px;
+}
+
+.form-container::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.3);
 }
 </style>

@@ -7,20 +7,20 @@ export const validateEnvironmentForm = (data: EnvironmentFormData): string[] => 
     errors.push('环境名称不能为空')
   }
 
-  if (!data.apiKey.trim()) {
-    errors.push('API Key 不能为空')
+  if (data.env.length === 0) {
+    errors.push('至少需要添加一个环境变量')
   }
 
-  if (data.baseUrl && !isValidUrl(data.baseUrl)) {
-    errors.push('Base URL 格式不正确')
+  const validEnvVars = data.env.filter(envVar => envVar.key.trim())
+  if (validEnvVars.length === 0) {
+    errors.push('至少需要一个有效的环境变量')
   }
 
-  if (data.maxTokens && !isValidNumber(data.maxTokens, 1, 100000)) {
-    errors.push('最大 Token 数必须是 1-100000 之间的数字')
-  }
-
-  if (data.temperature && !isValidNumber(data.temperature, 0, 2)) {
-    errors.push('Temperature 必须是 0-2 之间的数字')
+  // 检查重复的环境变量名
+  const keys = validEnvVars.map(envVar => envVar.key.trim())
+  const uniqueKeys = new Set(keys)
+  if (keys.length !== uniqueKeys.size) {
+    errors.push('存在重复的环境变量名')
   }
 
   return errors

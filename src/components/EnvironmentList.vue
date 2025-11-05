@@ -6,11 +6,16 @@
       <div class="status-card">
         <div class="status-indicator active">
           <span class="status-dot"></span>
-          <span>已配置 API Key</span>
+          <span>已配置环境变量</span>
         </div>
         <div class="status-details">
-          <p><strong>Base URL:</strong> {{ environmentStore.currentSettings.baseUrl || '默认' }}</p>
-          <p><strong>Model:</strong> {{ environmentStore.currentSettings.model || '默认' }}</p>
+          <p><strong>环境变量数量:</strong> {{ Object.keys(environmentStore.currentSettings.env).length }}</p>
+          <div class="current-env-vars">
+            <p v-for="envVar in getDisplayEnvVars(environmentStore.currentSettings.env)" :key="envVar.key" class="current-env-var">
+              <strong>{{ envVar.key }}:</strong>
+              <span>{{ envVar.value }}</span>
+            </p>
+          </div>
         </div>
       </div>
     </div>
@@ -47,18 +52,16 @@
           v-for="environment in environmentStore.environments"
           :key="environment.id"
           class="environment-card"
-          :class="{ active: environment.isActive }"
         >
           <div class="card-header">
             <h3>{{ environment.name }}</h3>
             <div class="card-actions">
               <button
                 @click="applyEnvironment(environment)"
-                :disabled="environmentStore.isLoading || environment.isActive"
-                class="btn btn-sm"
-                :class="environment.isActive ? 'btn-success' : 'btn-primary'"
+                :disabled="environmentStore.isLoading"
+                class="btn btn-sm btn-primary"
               >
-                {{ environment.isActive ? '当前使用' : '应用' }}
+                应用
               </button>
               <button
                 @click="editEnvironment(environment)"
@@ -75,9 +78,15 @@
             </div>
           </div>
           <div class="card-content">
-            <p><strong>API Key:</strong> {{ maskApiKey(environment.apiKey) }}</p>
-            <p v-if="environment.baseUrl"><strong>Base URL:</strong> {{ environment.baseUrl }}</p>
-            <p v-if="environment.model"><strong>Model:</strong> {{ environment.model }}</p>
+            <div class="env-preview">
+              <p><strong>环境变量数量:</strong> {{ environment.env.length }}</p>
+              <div class="key-env-vars">
+                <p v-for="envVar in getDisplayEnvVarsFromEnv(environment.env)" :key="envVar.key" class="key-env-var">
+                  <strong>{{ envVar.key }}:</strong>
+                  <span>{{ envVar.value }}</span>
+                </p>
+              </div>
+            </div>
             <p><strong>更新时间:</strong> {{ formatDate(environment.updatedAt) }}</p>
           </div>
         </div>
@@ -110,17 +119,13 @@
 import { ref, onMounted } from 'vue'
 import { useEnvironmentStore } from '@/stores/environment'
 import EnvironmentForm from './EnvironmentForm.vue'
-import type { ClaudeEnvironment } from '@/types/environment'
+import type { ClaudeEnvironment, EnvVar } from '@/types/environment'
 import { formatDate } from '@/utils/validation'
 
 const environmentStore = useEnvironmentStore()
 const showAddForm = ref(false)
 const editingEnvironment = ref<ClaudeEnvironment | null>(null)
 
-const maskApiKey = (apiKey: string): string => {
-  if (apiKey.length <= 8) return '****'
-  return apiKey.substring(0, 4) + '****' + apiKey.substring(apiKey.length - 4)
-}
 
 const applyEnvironment = async (environment: ClaudeEnvironment) => {
   try {
@@ -143,6 +148,49 @@ const deleteEnvironment = (id: string) => {
 const handleSaveEnvironment = () => {
   showAddForm.value = false
   editingEnvironment.value = null
+}
+
+const getDisplayEnvVars = (envRecord: Record<string, string>) => {
+  // 将HashMap转换为数组
+  const envVars = Object.entries(envRecord).map(([key, value]) => ({ key, value }))
+
+  // 只显示重要的环境变量，最多显示5个
+  const importantKeys = [
+    'ANTHROPIC_AUTH_TOKEN', 'ANTHROPIC_API_KEY', 'API_KEY',
+    'ANTHROPIC_BASE_URL', 'BASE_URL',
+    'ANTHROPIC_MODEL', 'MODEL'
+  ]
+
+  const importantVars = envVars.filter(envVar =>
+    importantKeys.some(key => envVar.key.includes(key))
+  )
+
+  // 如果重要变量少于3个，添加一些其他变量
+  const otherVars = envVars
+    .filter(envVar => !importantKeys.some(key => envVar.key.includes(key)))
+    .slice(0, Math.max(0, 3 - importantVars.length))
+
+  return [...importantVars, ...otherVars].slice(0, 5)
+}
+
+const getDisplayEnvVarsFromEnv = (envVars: EnvVar[]) => {
+  // 只显示重要的环境变量，最多显示5个
+  const importantKeys = [
+    'ANTHROPIC_AUTH_TOKEN', 'ANTHROPIC_API_KEY', 'API_KEY',
+    'ANTHROPIC_BASE_URL', 'BASE_URL',
+    'ANTHROPIC_MODEL', 'MODEL'
+  ]
+
+  const importantVars = envVars.filter(envVar =>
+    importantKeys.some(key => envVar.key.includes(key))
+  )
+
+  // 如果重要变量少于3个，添加一些其他变量
+  const otherVars = envVars
+    .filter(envVar => !importantKeys.some(key => envVar.key.includes(key)))
+    .slice(0, Math.max(0, 3 - importantVars.length))
+
+  return [...importantVars, ...otherVars].slice(0, 5)
 }
 
 const handleCancelForm = () => {
@@ -200,6 +248,18 @@ onMounted(() => {
   color: rgba(255, 255, 255, 0.8);
 }
 
+.current-env-vars {
+  margin-top: 0.5rem;
+  padding-left: 0.5rem;
+  border-left: 2px solid rgba(74, 222, 128, 0.3);
+}
+
+.current-env-var {
+  margin: 0.15rem 0;
+  font-size: 0.85rem;
+  color: rgba(255, 255, 255, 0.7);
+}
+
 .section-header {
   display: flex;
   justify-content: space-between;
@@ -234,10 +294,6 @@ onMounted(() => {
   border-color: rgba(255, 255, 255, 0.2);
 }
 
-.environment-card.active {
-  border-color: #4ade80;
-  background: rgba(74, 222, 128, 0.1);
-}
 
 .card-header {
   display: flex;
@@ -260,6 +316,22 @@ onMounted(() => {
   margin: 0.25rem 0;
   color: rgba(255, 255, 255, 0.8);
   font-size: 0.9rem;
+}
+
+.env-preview {
+  margin-bottom: 0.5rem;
+}
+
+.key-env-vars {
+  margin-top: 0.5rem;
+  padding-left: 0.5rem;
+  border-left: 2px solid rgba(59, 130, 246, 0.3);
+}
+
+.key-env-var {
+  margin: 0.15rem 0;
+  font-size: 0.85rem;
+  color: rgba(255, 255, 255, 0.7);
 }
 
 .btn {
@@ -311,10 +383,6 @@ onMounted(() => {
   background: #dc2626;
 }
 
-.btn-success {
-  background: #4ade80;
-  color: #000;
-}
 
 .error-toast {
   position: fixed;

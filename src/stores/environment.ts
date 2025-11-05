@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import type { ClaudeEnvironment, ClaudeSettings, EnvironmentFormData } from '@/types/environment'
+import type { ClaudeEnvironment, ClaudeSettings, EnvironmentFormData, EnvVar } from '@/types/environment'
 import { invoke } from '@tauri-apps/api/tauri'
 
 export const useEnvironmentStore = defineStore('environment', () => {
@@ -9,10 +9,7 @@ export const useEnvironmentStore = defineStore('environment', () => {
   const isLoading = ref(false)
   const error = ref<string | null>(null)
 
-  const activeEnvironment = computed(() =>
-    environments.value.find(env => env.isActive)
-  )
-
+  
   const loadEnvironments = () => {
     try {
       const stored = localStorage.getItem('claude_environments')
@@ -48,15 +45,17 @@ export const useEnvironmentStore = defineStore('environment', () => {
   }
 
   const addEnvironment = (formData: EnvironmentFormData) => {
+    const cleanEnvVars = formData.env
+      .filter(envVar => envVar.key.trim())
+      .map(envVar => ({
+        key: envVar.key.trim(),
+        value: envVar.value
+      }))
+
     const newEnvironment: ClaudeEnvironment = {
       id: Date.now().toString(),
       name: formData.name,
-      apiKey: formData.apiKey,
-      baseUrl: formData.baseUrl || undefined,
-      model: formData.model || undefined,
-      maxTokens: formData.maxTokens ? parseInt(formData.maxTokens) : undefined,
-      temperature: formData.temperature ? parseFloat(formData.temperature) : undefined,
-      isActive: false,
+      env: cleanEnvVars,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString()
     }
@@ -69,14 +68,17 @@ export const useEnvironmentStore = defineStore('environment', () => {
   const updateEnvironment = (id: string, formData: EnvironmentFormData) => {
     const index = environments.value.findIndex(env => env.id === id)
     if (index !== -1) {
+      const cleanEnvVars = formData.env
+        .filter(envVar => envVar.key.trim())
+        .map(envVar => ({
+          key: envVar.key.trim(),
+          value: envVar.value
+        }))
+
       environments.value[index] = {
         ...environments.value[index],
         name: formData.name,
-        apiKey: formData.apiKey,
-        baseUrl: formData.baseUrl || undefined,
-        model: formData.model || undefined,
-        maxTokens: formData.maxTokens ? parseInt(formData.maxTokens) : undefined,
-        temperature: formData.temperature ? parseFloat(formData.temperature) : undefined,
+        env: cleanEnvVars,
         updatedAt: new Date().toISOString()
       }
       saveEnvironments()
@@ -88,11 +90,6 @@ export const useEnvironmentStore = defineStore('environment', () => {
   const deleteEnvironment = (id: string) => {
     const index = environments.value.findIndex(env => env.id === id)
     if (index !== -1) {
-      const environment = environments.value[index]
-      if (environment.isActive) {
-        // 如果删除的是当前激活的环境，清除激活状态
-        environment.isActive = false
-      }
       environments.value.splice(index, 1)
       saveEnvironments()
       return true
@@ -105,27 +102,13 @@ export const useEnvironmentStore = defineStore('environment', () => {
       isLoading.value = true
       error.value = null
 
-      // 清除所有环境的激活状态
-      environments.value.forEach(env => env.isActive = false)
-
-      // 设置当前环境为激活状态
-      const envIndex = environments.value.findIndex(env => env.id === environment.id)
-      if (envIndex !== -1) {
-        environments.value[envIndex].isActive = true
-      }
-
       const result = await invoke<string>('apply_environment', {
         environment: {
           name: environment.name,
-          api_key: environment.apiKey,
-          base_url: environment.baseUrl,
-          model: environment.model,
-          max_tokens: environment.maxTokens,
-          temperature: environment.temperature
+          env: environment.env
         }
       })
 
-      saveEnvironments()
       await loadCurrentSettings()
 
       return result
@@ -147,7 +130,6 @@ export const useEnvironmentStore = defineStore('environment', () => {
     currentSettings,
     isLoading,
     error,
-    activeEnvironment,
     loadEnvironments,
     loadCurrentSettings,
     addEnvironment,

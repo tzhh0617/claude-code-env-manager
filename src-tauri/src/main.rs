@@ -7,22 +7,25 @@ use std::path::PathBuf;
 use tauri::Manager;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct EnvVar {
+    pub key: String,
+    pub value: String,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct ClaudeEnvironment {
     pub name: String,
-    pub api_key: String,
-    pub base_url: Option<String>,
-    pub model: Option<String>,
-    pub max_tokens: Option<u32>,
-    pub temperature: Option<f32>,
+    pub env: Vec<EnvVar>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct ClaudeSettings {
-    pub api_key: String,
-    pub base_url: Option<String>,
-    pub model: Option<String>,
-    pub max_tokens: Option<u32>,
-    pub temperature: Option<f32>,
+    pub env: std::collections::HashMap<String, String>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct ClaudeSettingsWithEnv {
+    env: std::collections::HashMap<String, String>,
 }
 
 fn get_claude_settings_path() -> Result<PathBuf, String> {
@@ -47,10 +50,77 @@ async fn get_current_settings() -> Result<Option<ClaudeSettings>, String> {
     let content = fs::read_to_string(&settings_path)
         .map_err(|e| format!("读取 settings.json 失败: {}", e))?;
 
-    let settings: ClaudeSettings = serde_json::from_str(&content)
-        .map_err(|e| format!("解析 settings.json 失败: {}", e))?;
+    // 尝试解析为标准格式
+    if let Ok(settings_with_env) = serde_json::from_str::<ClaudeSettingsWithEnv>(&content) {
+        return Ok(Some(ClaudeSettings {
+            env: settings_with_env.env,
+        }));
+    }
 
-    Ok(Some(settings))
+    // 尝试解析为旧的HashMap格式并转换
+    #[derive(Debug, Serialize, Deserialize)]
+    struct OldClaudeSettings {
+        env: std::collections::HashMap<String, String>,
+    }
+
+    if let Ok(old_settings) = serde_json::from_str::<OldClaudeSettings>(&content) {
+        let env: Vec<EnvVar> = old_settings.env
+            .into_iter()
+            .map(|(key, value)| EnvVar { key, value })
+            .collect();
+
+        return Ok(Some(ClaudeSettings { env }));
+    }
+
+    // 尝试解析为最旧的格式并转换
+    #[derive(Debug, Serialize, Deserialize)]
+    struct LegacyClaudeSettings {
+        api_key: String,
+        base_url: Option<String>,
+        model: Option<String>,
+        max_tokens: Option<u32>,
+        temperature: Option<f32>,
+    }
+
+    if let Ok(legacy_settings) = serde_json::from_str::<LegacyClaudeSettings>(&content) {
+        let mut env = Vec::new();
+        env.push(EnvVar {
+            key: "ANTHROPIC_AUTH_TOKEN".to_string(),
+            value: legacy_settings.api_key,
+        });
+
+        if let Some(base_url) = legacy_settings.base_url {
+            env.push(EnvVar {
+                key: "ANTHROPIC_BASE_URL".to_string(),
+                value: base_url,
+            });
+        }
+
+        if let Some(model) = legacy_settings.model {
+            env.push(EnvVar {
+                key: "ANTHROPIC_MODEL".to_string(),
+                value: model,
+            });
+        }
+
+        if let Some(max_tokens) = legacy_settings.max_tokens {
+            env.push(EnvVar {
+                key: "MAX_TOKENS".to_string(),
+                value: max_tokens.to_string(),
+            });
+        }
+
+        if let Some(temperature) = legacy_settings.temperature {
+            env.push(EnvVar {
+                key: "TEMPERATURE".to_string(),
+                value: temperature.to_string(),
+            });
+        }
+
+        return Ok(Some(ClaudeSettings { env }));
+    }
+
+    Err(format!("无法解析 settings.json，既不是新格式也不是旧格式"))
 }
 
 #[tauri::command]
@@ -64,12 +134,15 @@ async fn apply_environment(environment: ClaudeEnvironment) -> Result<String, Str
             .map_err(|e| format!("创建备份文件失败: {}", e))?;
     }
 
-    let settings = ClaudeSettings {
-        api_key: environment.api_key,
-        base_url: environment.base_url,
-        model: environment.model,
-        max_tokens: environment.max_tokens,
-        temperature: environment.temperature,
+    // 将数组格式转换为HashMap格式保存
+    let env_hashmap: std::collections::HashMap<String, String> = environment.env
+        .into_iter()
+        .filter(|env_var| !env_var.key.trim().is_empty())
+        .map(|env_var| (env_var.key, env_var.value))
+        .collect();
+
+    let settings = ClaudeSettingsWithEnv {
+        env: env_hashmap,
     };
 
     let content = serde_json::to_string_pretty(&settings)
