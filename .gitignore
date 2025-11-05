@@ -32,3 +32,5 @@ rust-toolchain.toml
 .env
 .env.local
 .env.*.local
+
+*.tsbuildinfo

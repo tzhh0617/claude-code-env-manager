@@ -139,9 +139,13 @@ const editEnvironment = (environment: ClaudeEnvironment) => {
   editingEnvironment.value = environment
 }
 
-const deleteEnvironment = (id: string) => {
+const deleteEnvironment = async (id: string) => {
   if (confirm('确定要删除这个环境配置吗？')) {
-    environmentStore.deleteEnvironment(id)
+    try {
+      await environmentStore.deleteEnvironment(id)
+    } catch (error) {
+      console.error('删除环境失败:', error)
+    }
   }
 }
 

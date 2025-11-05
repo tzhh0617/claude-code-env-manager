@@ -58,10 +58,7 @@
                   删除
                 </button>
               </div>
-              <div v-if="getEnvVarDescription(envVar.key)" class="env-var-description">
-                {{ getEnvVarDescription(envVar.key) }}
-              </div>
-              </div>
+                </div>
 
             <div v-if="formData.env.length === 0" class="empty-env-vars">
               <p>暂无环境变量，点击"添加变量"开始配置</p>
@@ -161,11 +158,6 @@ const addCommonVars = () => {
   })
 }
 
-const getEnvVarDescription = (key: string): string => {
-  const commonVar = COMMON_ENV_VARS.find(var_ => var_.key === key)
-  return commonVar?.description || ''
-}
-
 
 const validateForm = (): boolean => {
   errors.value = []
@@ -199,12 +191,12 @@ const handleSubmit = async () => {
     const validEnvVars = formData.env.filter(envVar => envVar.key.trim())
 
     if (isEdit.value && props.environment) {
-      environmentStore.updateEnvironment(props.environment.id, {
+      await environmentStore.updateEnvironment(props.environment.id, {
         ...formData,
         env: validEnvVars
       })
     } else {
-      environmentStore.addEnvironment({
+      await environmentStore.addEnvironment({
         ...formData,
         env: validEnvVars
       })
@@ -352,16 +344,6 @@ onMounted(() => {
 .btn-remove {
   flex-shrink: 0;
   width: 60px;
-}
-
-.env-var-description {
-  margin-top: 0.5rem;
-  padding: 0.25rem 0.5rem;
-  background: rgba(59, 130, 246, 0.1);
-  border-left: 3px solid #3b82f6;
-  color: rgba(255, 255, 255, 0.7);
-  font-size: 0.8rem;
-  border-radius: 0 4px 4px 0;
 }
 
 
