@@ -4,23 +4,23 @@ export const validateEnvironmentForm = (data: EnvironmentFormData): string[] => 
   const errors: string[] = []
 
   if (!data.name.trim()) {
-    errors.push('环境名称不能为空')
+    errors.push('Environment name cannot be empty')
   }
 
   if (data.env.length === 0) {
-    errors.push('至少需要添加一个环境变量')
+    errors.push('At least one environment variable is required')
   }
 
   const validEnvVars = data.env.filter(envVar => envVar.key.trim())
   if (validEnvVars.length === 0) {
-    errors.push('至少需要一个有效的环境变量')
+    errors.push('At least one valid environment variable is required')
   }
 
-  // 检查重复的环境变量名
+  // Check for duplicate environment variable names
   const keys = validEnvVars.map(envVar => envVar.key.trim())
   const uniqueKeys = new Set(keys)
   if (keys.length !== uniqueKeys.size) {
-    errors.push('存在重复的环境变量名')
+    errors.push('Duplicate environment variable names exist')
   }
 
   return errors
@@ -42,7 +42,7 @@ export const isValidNumber = (value: string, min: number, max: number): boolean 
 
 export const formatDate = (dateString: string): string => {
   const date = new Date(dateString)
-  return date.toLocaleString('zh-CN', {
+  return date.toLocaleString('en-US', {
     year: 'numeric',
     month: '2-digit',
     day: '2-digit',

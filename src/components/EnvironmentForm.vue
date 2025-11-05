@@ -2,24 +2,24 @@
   <div class="form-overlay" @click="handleOverlayClick">
     <div class="form-container" @click.stop>
       <div class="form-header">
-        <h2>{{ isEdit ? "编辑环境" : "添加环境" }}</h2>
+        <h2>{{ isEdit ? "Edit Environment" : "Add Environment" }}</h2>
         <button @click="$emit('cancel')" class="btn-close">×</button>
       </div>
 
       <form @submit.prevent="handleSubmit" class="environment-form">
         <div class="form-group">
-          <label for="name">环境名称 (备注)</label>
+          <label for="name">Environment Name (Note)</label>
           <input
             id="name"
             v-model="formData.name"
             type="text"
-            placeholder="例如: MiniMax 环境 (可选)"
+            placeholder="e.g.: MiniMax Environment (optional)"
           />
         </div>
 
         <div class="env-section">
           <div class="section-header">
-            <h3>环境变量配置</h3>
+            <h3>Environment Variables Configuration</h3>
             <div class="section-actions">
               <button
                 type="button"
@@ -40,7 +40,7 @@
                 @click="addEnvVar"
                 class="btn btn-primary btn-sm"
               >
-                添加变量
+                Add Variable
               </button>
             </div>
           </div>
@@ -55,13 +55,13 @@
                 <input
                   v-model="envVar.key"
                   type="text"
-                  placeholder="变量名 (如: ANTHROPIC_AUTH_TOKEN)"
+                  placeholder="Variable name (e.g.: ANTHROPIC_AUTH_TOKEN)"
                   class="env-key-input"
                 />
                 <input
                   v-model="envVar.value"
                   type="text"
-                  placeholder="变量值"
+                  placeholder="Variable value"
                   class="env-value-input"
                 />
                 <button
@@ -69,13 +69,13 @@
                   @click="removeEnvVar(index)"
                   class="btn btn-danger btn-sm btn-remove"
                 >
-                  删除
+                  Delete
                 </button>
               </div>
             </div>
 
             <div v-if="formData.env.length === 0" class="empty-env-vars">
-              <p>暂无环境变量，点击"添加变量"开始配置</p>
+              <p>No environment variables yet. Click "Add Variable" to start configuring</p>
             </div>
           </div>
         </div>
@@ -93,7 +93,7 @@
           @click="$emit('cancel')"
           class="btn btn-secondary"
         >
-          取消
+          Cancel
         </button>
         <button
           type="submit"
@@ -101,7 +101,7 @@
           :disabled="isLoading || !isFormValid"
           class="btn btn-primary"
         >
-          {{ isLoading ? "保存中..." : isEdit ? "更新" : "创建" }}
+          {{ isLoading ? "Saving..." : isEdit ? "Update" : "Create" }}
         </button>
       </div>
     </div>
@@ -115,7 +115,6 @@ import type {
   ClaudeEnvironment,
   EnvironmentFormData,
 } from "@/types/environment";
-import { COMMON_ENV_VARS } from "@/types/environment";
 
 interface Props {
   environment?: ClaudeEnvironment | null;
@@ -158,7 +157,7 @@ const loadEnvironmentData = () => {
     formData.name = props.environment.name;
     formData.env = [...props.environment.env];
   }
-  // 新建环境时不自动添加变量，让用户手动选择配置
+  // Don't auto-add variables when creating new environment, let user manually configure
 };
 
 const addEnvVar = () => {
@@ -202,13 +201,13 @@ const validateForm = (): boolean => {
   errors.value = [];
 
   if (formData.env.length === 0) {
-    errors.value.push("至少需要添加一个环境变量");
+    errors.value.push("At least one environment variable is required");
   }
 
-  // 检查是否有有效的环境变量
+  // Check if there are valid environment variables
   const validEnvVars = formData.env.filter((envVar) => envVar.key.trim());
   if (validEnvVars.length === 0) {
-    errors.value.push("至少需要一个有效的环境变量");
+    errors.value.push("At least one valid environment variable is required");
   }
 
   return errors.value.length === 0;
@@ -222,7 +221,7 @@ const handleSubmit = async () => {
   try {
     isLoading.value = true;
 
-    // 过滤掉空的环境变量
+    // Filter out empty environment variables
     const validEnvVars = formData.env.filter((envVar) => envVar.key.trim());
 
     if (isEdit.value && props.environment) {
@@ -239,8 +238,8 @@ const handleSubmit = async () => {
 
     emit("save");
   } catch (error) {
-    console.error("保存环境失败:", error);
-    errors.value = ["保存失败，请重试"];
+    console.error("Failed to save environment:", error);
+    errors.value = ["Save failed, please try again"];
   } finally {
     isLoading.value = false;
   }
@@ -512,7 +511,7 @@ input::placeholder {
   box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
 }
 
-/* 滚动条样式 */
+/* Scrollbar styles */
 .form-container::-webkit-scrollbar {
   width: 8px;
 }

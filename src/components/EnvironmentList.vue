@@ -1,19 +1,19 @@
 <template>
   <div class="environment-list">
-    <!-- 当前环境状态 -->
+    <!-- Current Environment Status -->
     <div class="current-status" v-if="environmentStore.currentSettings">
       <div class="status-card">
         <div class="status-header">
           <div class="status-indicator active">
             <span class="status-dot"></span>
-            <span>当前配置</span>
+            <span>Current Configuration</span>
           </div>
           <button
             @click="removeCurrentConfig"
             :disabled="environmentStore.isLoading"
             class="btn btn-sm btn-danger"
           >
-            移除配置
+            Remove Configuration
           </button>
         </div>
         <div class="current-env-vars-table">
@@ -41,32 +41,32 @@
       <div class="status-card">
         <div class="status-indicator inactive">
           <span class="status-dot"></span>
-          <span>未配置</span>
+          <span>Not Configured</span>
         </div>
-        <p>尚未应用任何环境配置</p>
+        <p>No environment configuration has been applied yet</p>
       </div>
     </div>
 
-    <!-- 环境列表 -->
+    <!-- Environment List -->
     <div class="environments-section">
       <div class="section-header">
-        <h2>环境列表</h2>
+        <h2>Environment List</h2>
         <button @click="showAddForm = true" class="btn btn-primary">
-          添加环境
+          Add Environment
         </button>
       </div>
 
       <div class="info-tip">
-        <p>💡 提示：应用环境配置后，请重新打开新的终端窗口以便配置生效</p>
+        <p>💡 Tip: After applying environment configuration, please reopen a new terminal window for the configuration to take effect</p>
       </div>
 
       <div
         v-if="environmentStore.environments.length === 0"
         class="empty-state"
       >
-        <p>暂无环境配置</p>
+        <p>No environment configurations</p>
         <button @click="showAddForm = true" class="btn btn-primary">
-          创建第一个环境
+          Create First Environment
         </button>
       </div>
 
@@ -74,9 +74,9 @@
         <table class="environment-table">
           <thead>
             <tr>
-              <th>名称</th>
+              <th>Name</th>
               <th>Base URL</th>
-              <th>操作</th>
+              <th>Actions</th>
             </tr>
           </thead>
           <tbody>
@@ -86,10 +86,10 @@
               class="environment-row"
             >
               <td class="name-cell">
-                {{ environment.name || "未命名" }}
+                {{ environment.name || "Unnamed" }}
               </td>
               <td class="url-cell">
-                {{ getBaseUrl(environment.env) || "未配置" }}
+                {{ getBaseUrl(environment.env) || "Not Configured" }}
               </td>
               <td class="actions-cell">
                 <button
@@ -97,19 +97,19 @@
                   :disabled="environmentStore.isLoading"
                   class="btn btn-sm btn-primary"
                 >
-                  应用
+                  Apply
                 </button>
                 <button
                   @click="editEnvironment(environment)"
                   class="btn btn-sm btn-secondary"
                 >
-                  编辑
+                  Edit
                 </button>
                 <button
                   @click="deleteEnvironment(environment.id)"
                   class="btn btn-sm btn-danger"
                 >
-                  删除
+                  Delete
                 </button>
               </td>
             </tr>
@@ -118,7 +118,7 @@
       </div>
     </div>
 
-    <!-- 添加/编辑环境表单 -->
+    <!-- Add/Edit Environment Form -->
     <EnvironmentForm
       v-if="showAddForm || editingEnvironment"
       :environment="editingEnvironment"
@@ -126,7 +126,7 @@
       @cancel="handleCancelForm"
     />
 
-    <!-- 错误提示 -->
+    <!-- Error Message -->
     <div v-if="environmentStore.error" class="error-toast">
       <p>{{ environmentStore.error }}</p>
       <button @click="environmentStore.clearError()" class="btn-close">
@@ -134,10 +134,10 @@
       </button>
     </div>
 
-    <!-- 加载状态 -->
+    <!-- Loading State -->
     <div v-if="environmentStore.isLoading" class="loading-overlay">
       <div class="loading-spinner"></div>
-      <p>正在应用环境配置...</p>
+      <p>Applying environment configuration...</p>
     </div>
   </div>
 </template>
@@ -156,7 +156,7 @@ const applyEnvironment = async (environment: ClaudeEnvironment) => {
   try {
     await environmentStore.applyEnvironment(environment);
   } catch (error) {
-    console.error("应用环境失败:", error);
+    console.error("Failed to apply environment:", error);
   }
 };
 
@@ -168,7 +168,7 @@ const deleteEnvironment = async (id: string) => {
   try {
     await environmentStore.deleteEnvironment(id);
   } catch (error) {
-    console.error("删除环境失败:", error);
+    console.error("Failed to delete environment:", error);
   }
 };
 
@@ -181,7 +181,7 @@ const removeCurrentConfig = async () => {
   try {
     await environmentStore.clearCurrentSettings();
   } catch (error) {
-    console.error("移除配置失败:", error);
+    console.error("Failed to remove configuration:", error);
   }
 };
 

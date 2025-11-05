@@ -1,7 +1,7 @@
 [package]
 name = "claude-code-env-manager"
 version = "1.0.0"
-description = "Claude Code 多环境管理桌面应用"
+description = "Claude Code multi-environment management desktop application"
 authors = ["you"]
 license = ""
 repository = ""

@@ -16,25 +16,25 @@ export const useEnvironmentStore = defineStore('environment', () => {
 
       if (cacheData) {
         environments.value = cacheData.environments || []
-        console.log('从文件加载环境配置:', environments.value.length, '个环境')
+        console.log('Loaded environment configurations from file:', environments.value.length, 'environments')
       } else {
         environments.value = []
-        console.log('缓存文件不存在，初始化空环境列表')
+        console.log('Cache file does not exist, initializing empty environment list')
       }
     } catch (err) {
-      console.error('加载环境配置失败:', err)
-      error.value = '加载环境配置失败'
+      console.error('Failed to load environment configuration:', err)
+      error.value = 'Failed to load environment configuration'
       environments.value = []
     }
   }
 
   const saveEnvironments = async () => {
     try {
-      // 直接保存到文件
+      // Save directly to file
       await saveEnvironmentsToFile()
     } catch (err) {
-      console.error('保存环境配置失败:', err)
-      error.value = '保存环境配置失败'
+      console.error('Failed to save environment configuration:', err)
+      error.value = 'Failed to save environment configuration'
     }
   }
 
@@ -44,9 +44,9 @@ export const useEnvironmentStore = defineStore('environment', () => {
         environments: environments.value
       })
 
-      console.log('环境配置已保存到文件:', environments.value.length, '个环境')
+      console.log('Environment configuration saved to file:', environments.value.length, 'environments')
     } catch (err) {
-      console.error('保存环境配置到文件失败:', err)
+      console.error('Failed to save environment configuration to file:', err)
       throw err
     }
   }
@@ -61,11 +61,11 @@ export const useEnvironmentStore = defineStore('environment', () => {
         currentSettings.value = { env: settings.env }
       } else {
         currentSettings.value = null
-        console.log('配置文件中缺少env字段，这是正常情况')
+        console.log('Missing env field in configuration file, this is normal')
       }
     } catch (err) {
-      console.error('加载当前设置失败:', err)
-      error.value = '加载当前设置失败'
+      console.error('Failed to load current settings:', err)
+      error.value = 'Failed to load current settings'
     } finally {
       isLoading.value = false
     }
@@ -134,7 +134,7 @@ export const useEnvironmentStore = defineStore('environment', () => {
 
       return 'success'
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : '应用环境失败'
+      const errorMessage = err instanceof Error ? err.message : 'Failed to apply environment'
       error.value = errorMessage
       throw new Error(errorMessage)
     } finally {
@@ -152,7 +152,7 @@ export const useEnvironmentStore = defineStore('environment', () => {
 
       return true
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : '清除配置失败'
+      const errorMessage = err instanceof Error ? err.message : 'Failed to clear configuration'
       error.value = errorMessage
       throw new Error(errorMessage)
     } finally {

@@ -1,11 +1,11 @@
 import { invoke } from "@tauri-apps/api/tauri";
 
 /**
- * 文件操作工具类
+ * File Operations Utility Class
  */
 export class FileOperations {
   /**
-   * 读取文件内容
+   * Read file content
    */
   static async readFile(filePath: string): Promise<string | null> {
     return await invoke<string | null>("read_file", {
@@ -14,7 +14,7 @@ export class FileOperations {
   }
 
   /**
-   * 写入文件内容
+   * Write file content
    */
   static async writeFile(filePath: string, content: string): Promise<string> {
     return await invoke<string>("write_file", {
@@ -24,14 +24,14 @@ export class FileOperations {
   }
 
   /**
-   * 获取用户主目录
+   * Get user home directory
    */
   static async getHomeDir(): Promise<string> {
     return await invoke<string>("get_home_dir");
   }
 
   /**
-   * 读取Claude设置文件
+   * Read Claude settings file
    */
   static async readClaudeSettings(): Promise<any> {
     const homeDir = await this.getHomeDir();
@@ -47,7 +47,7 @@ export class FileOperations {
   }
 
   /**
-   * 写入Claude设置文件
+   * Write Claude settings file
    */
   static async writeClaudeSettings(settings: any): Promise<string> {
     const homeDir = await this.getHomeDir();
@@ -58,7 +58,7 @@ export class FileOperations {
   }
 
   /**
-   * 清除Claude设置中的环境变量，保留其他字段
+   * Clear environment variables from Claude settings, keep other fields
    */
   static async clearClaudeEnvironment(): Promise<void> {
     const existingSettings = await this.readClaudeSettings();
@@ -66,7 +66,7 @@ export class FileOperations {
     let newSettings = {};
 
     if (existingSettings && typeof existingSettings === "object") {
-      // 保留除 env 外的所有字段
+      // Keep all fields except env
       newSettings = { ...existingSettings };
       delete (newSettings as any).env;
     }
@@ -75,7 +75,7 @@ export class FileOperations {
   }
 
   /**
-   * 应用环境变量到Claude设置
+   * Apply environment variables to Claude settings
    */
   static async applyClaudeEnvironment(
     envVars: Array<{ key: string; value: string }>
@@ -87,7 +87,7 @@ export class FileOperations {
         const key = envVar.key.trim();
         let value: any = envVar.value;
 
-        // 特殊处理 CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC 字段，转换为数字
+        // Special handling for CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC field, convert to number
         if (key === "CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC") {
           const numValue = parseInt(value, 10);
           if (!isNaN(numValue)) {
@@ -99,10 +99,10 @@ export class FileOperations {
       }
     });
 
-    // 读取现有设置
+    // Read existing settings
     const existingSettings = (await this.readClaudeSettings()) || {};
 
-    // 合并设置
+    // Merge settings
     const newSettings = {
       ...existingSettings,
       env: envRecord,
@@ -112,7 +112,7 @@ export class FileOperations {
   }
 
   /**
-   * 读取环境管理器缓存文件
+   * Read environment manager cache file
    */
   static async readEnvironmentCache(): Promise<any> {
     const homeDir = await this.getHomeDir();
@@ -128,7 +128,7 @@ export class FileOperations {
   }
 
   /**
-   * 写入环境管理器缓存文件
+   * Write environment manager cache file
    */
   static async writeEnvironmentCache(data: any): Promise<string> {
     const homeDir = await this.getHomeDir();

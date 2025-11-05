@@ -15,7 +15,7 @@ async fn read_file(file_path: String) -> Result<Option<String>, String> {
     }
 
     let content = fs::read_to_string(&path)
-        .map_err(|e| format!("读取文件失败: {}", e))?;
+        .map_err(|e| format!("Failed to read file: {}", e))?;
 
     Ok(Some(content))
 }
@@ -24,28 +24,28 @@ async fn read_file(file_path: String) -> Result<Option<String>, String> {
 async fn write_file(file_path: String, content: String) -> Result<String, String> {
     let path = PathBuf::from(&file_path);
 
-    // 自动创建父目录
+    // Auto-create parent directory
     if let Some(parent) = path.parent() {
         fs::create_dir_all(parent)
-            .map_err(|e| format!("创建目录失败: {}", e))?;
+            .map_err(|e| format!("Failed to create directory: {}", e))?;
     }
 
-    // 写入文件
+    // Write file
     fs::write(&path, content)
-        .map_err(|e| format!("写入文件失败: {}", e))?;
+        .map_err(|e| format!("Failed to write file: {}", e))?;
 
-    Ok(format!("文件已成功写入: {}", file_path))
+    Ok(format!("File successfully written: {}", file_path))
 }
 
 #[tauri::command]
 async fn get_home_dir() -> Result<String, String> {
-    let home_dir = dirs::home_dir().ok_or("无法找到用户主目录")?;
+    let home_dir = dirs::home_dir().ok_or("Unable to find user home directory")?;
     Ok(home_dir.to_string_lossy().to_string())
 }
 
 #[tauri::command]
 async fn show_error(message: String) {
-    // 这个命令可以在前端调用时显示错误对话框
+    // This command can show error dialog when called from frontend
     println!("Error: {}", message);
 }
 
@@ -58,7 +58,7 @@ fn main() {
             show_error
         ])
         .setup(|app| {
-            // 确保依赖项可用
+            // Ensure dependencies are available
             #[cfg(debug_assertions)]
             {
                 let window = app.get_window("main").unwrap();

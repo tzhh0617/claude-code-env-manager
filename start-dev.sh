@@ -1,30 +1,30 @@
 #!/bin/bash
 
-echo "🚀 启动 Claude Code 环境管理器 - 开发模式"
+echo "🚀 Starting Claude Code Env Manager - Development Mode"
 echo "=========================================="
 
-# 检查依赖
+# Check dependencies
 if ! command -v node &> /dev/null; then
-    echo "❌ Node.js 未安装，请先运行 ./setup.sh"
+    echo "❌ Node.js is not installed, please run ./setup.sh first"
     exit 1
 fi
 
 if ! command -v pnpm &> /dev/null; then
-    echo "❌ pnpm 未安装，请先运行 ./setup.sh"
+    echo "❌ pnpm is not installed, please run ./setup.sh first"
     exit 1
 fi
 
 if ! command -v cargo &> /dev/null; then
-    echo "❌ Rust/Cargo 未安装，请先运行 ./setup.sh"
+    echo "❌ Rust/Cargo is not installed, please run ./setup.sh first"
     exit 1
 fi
 
-echo "✅ 环境检查通过"
+echo "✅ Environment check passed"
 echo ""
 
-# 启动开发服务器
-echo "🔧 启动 Tauri 开发服务器..."
-echo "   首次启动可能需要编译 Rust 代码，请耐心等待..."
+# Start development server
+echo "🔧 Starting Tauri development server..."
+echo "   First startup may need to compile Rust code, please be patient..."
 echo ""
 
 pnpm run tauri:dev
