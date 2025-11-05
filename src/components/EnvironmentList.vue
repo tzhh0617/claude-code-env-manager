@@ -3,39 +3,36 @@
     <!-- 当前环境状态 -->
     <div class="current-status" v-if="environmentStore.currentSettings">
       <div class="status-card">
-        <div class="status-indicator active">
-          <span class="status-dot"></span>
-          <span>已配置环境变量</span>
+        <div class="status-header">
+          <div class="status-indicator active">
+            <span class="status-dot"></span>
+            <span>当前配置</span>
+          </div>
+          <button
+            @click="removeCurrentConfig"
+            :disabled="environmentStore.isLoading"
+            class="btn btn-sm btn-danger"
+          >
+            移除配置
+          </button>
         </div>
-        <div class="status-details">
-          <div class="status-header">
-            <p>已配置环境变量</p>
-            <button
-              @click="removeCurrentConfig"
-              :disabled="environmentStore.isLoading"
-              class="btn btn-sm btn-danger"
-            >
-              移除配置
-            </button>
-          </div>
-          <div class="current-env-vars-table">
-            <table class="env-vars-table">
-              <tbody>
-                <tr
-                  v-for="envVar in displayEnvVars"
-                  :key="envVar.key"
-                  class="env-var-row"
-                >
-                  <td class="env-key-cell">
-                    {{ envVar.key }}
-                  </td>
-                  <td class="env-value-cell">
-                    {{ envVar.value }}
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
+        <div class="current-env-vars-table">
+          <table class="env-vars-table">
+            <tbody>
+              <tr
+                v-for="envVar in displayEnvVars"
+                :key="envVar.key"
+                class="env-var-row"
+              >
+                <td class="env-key-cell">
+                  {{ envVar.key }}
+                </td>
+                <td class="env-value-cell">
+                  {{ envVar.value }}
+                </td>
+              </tr>
+            </tbody>
+          </table>
         </div>
       </div>
     </div>
@@ -261,9 +258,11 @@ onMounted(() => {
   margin-bottom: 0.5rem;
 }
 
-.status-details p {
-  margin: 0.25rem 0;
-  color: rgba(255, 255, 255, 0.8);
+
+.status-header .status-indicator {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
 }
 
 .current-env-vars-table {
