@@ -1,17 +1,20 @@
 <template>
-  <div id="app">
-    <header>
-      <h1>Claude Code 环境管理器</h1>
-    </header>
-    <main>
-      <RouterView />
-    </main>
+  <div class="container">
+    <RouterView />
   </div>
 </template>
 
 <script setup lang="ts">
-import { RouterView } from 'vue-router'
+import { RouterView } from "vue-router";
 </script>
+
+<style lang="css" scoped>
+.container {
+  padding: 80px;
+  max-width: 800px;
+  margin: 0 auto;
+}
+</style>
 
 <style>
 :root {
@@ -36,25 +39,7 @@ body {
 }
 
 #app {
-  max-width: 1280px;
-  margin: 0 auto;
-  padding: 2rem;
-  text-align: center;
-  width: 100%;
-}
-
-header {
-  margin-bottom: 2rem;
-}
-
-h1 {
-  font-size: 2rem;
-  margin: 0;
-}
-
-main {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
+  width: 100vw;
+  height: 100vh;
 }
 </style>

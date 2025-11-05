@@ -215,6 +215,7 @@ onMounted(() => {
 <style scoped>
 .environment-list {
   width: 100%;
+  overflow-x: hidden;
 }
 
 .current-status {
@@ -258,7 +259,6 @@ onMounted(() => {
   margin-bottom: 0.5rem;
 }
 
-
 .status-header .status-indicator {
   display: flex;
   align-items: center;
@@ -284,13 +284,15 @@ onMounted(() => {
 
 .env-key-cell {
   padding: 0.5rem 0.75rem;
-  text-align: right;
+  text-align: left;
   font-weight: 600;
   font-family: monospace;
   background: rgba(74, 222, 128, 0.05);
   border-right: 1px solid rgba(74, 222, 128, 0.2);
   color: rgba(255, 255, 255, 0.9);
-  width: 250px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .env-value-cell {
@@ -327,6 +329,7 @@ onMounted(() => {
 .environment-table {
   width: 100%;
   border-collapse: collapse;
+  table-layout: fixed;
 }
 
 .environment-table th {
