@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import type { ClaudeEnvironment, ClaudeSettings, EnvironmentFormData } from '@/types/environment'
-import { invoke } from '@tauri-apps/api/tauri'
+import { FileOperations } from '@/utils/fileOperations'
 
 export const useEnvironmentStore = defineStore('environment', () => {
   const environments = ref<ClaudeEnvironment[]>([])
@@ -12,21 +12,12 @@ export const useEnvironmentStore = defineStore('environment', () => {
   
   const loadEnvironments = async () => {
     try {
-      // 从文件加载
-      const homeDir = await invoke<string>('get_home_dir')
-      const cacheFilePath = `${homeDir}/.claude-code-env-manager.json`
+      const cacheData = await FileOperations.readEnvironmentCache()
 
-      const fileContent = await invoke<string | null>('read_file', {
-        filePath: cacheFilePath
-      })
-
-      if (fileContent) {
-        // 从文件加载成功
-        const data = JSON.parse(fileContent)
-        environments.value = data.environments || []
+      if (cacheData) {
+        environments.value = cacheData.environments || []
         console.log('从文件加载环境配置:', environments.value.length, '个环境')
       } else {
-        // 文件不存在，初始化空数组
         environments.value = []
         console.log('缓存文件不存在，初始化空环境列表')
       }
@@ -49,26 +40,14 @@ export const useEnvironmentStore = defineStore('environment', () => {
 
   const saveEnvironmentsToFile = async () => {
     try {
-      const homeDir = await invoke<string>('get_home_dir')
-      const cacheFilePath = `${homeDir}/.claude-code-env-manager.json`
-
-      const cacheData = {
-        version: '1.0.0',
-        lastUpdated: new Date().toISOString(),
+      await FileOperations.writeEnvironmentCache({
         environments: environments.value
-      }
-
-      const jsonContent = JSON.stringify(cacheData, null, 2)
-
-      await invoke<string>('write_file', {
-        filePath: cacheFilePath,
-        content: jsonContent
       })
 
       console.log('环境配置已保存到文件:', environments.value.length, '个环境')
     } catch (err) {
       console.error('保存环境配置到文件失败:', err)
-      throw err // 重新抛出错误，让上层处理
+      throw err
     }
   }
 
@@ -76,32 +55,13 @@ export const useEnvironmentStore = defineStore('environment', () => {
     try {
       isLoading.value = true
 
-      // 获取Claude设置文件路径
-      const homeDir = await invoke<string>('get_home_dir')
-      const settingsPath = `${homeDir}/.claude/settings.json`
+      const settings = await FileOperations.readClaudeSettings()
 
-      const fileContent = await invoke<string | null>('read_file', {
-        filePath: settingsPath
-      })
-
-      if (fileContent) {
-        try {
-          const jsonData = JSON.parse(fileContent)
-
-          // 直接使用JSON数据
-          if (jsonData.env && typeof jsonData.env === 'object') {
-            currentSettings.value = { env: jsonData.env }
-          } else {
-            // 缺少env字段是正常情况，不显示错误
-            currentSettings.value = null
-            console.log('配置文件中缺少env字段，这是正常情况')
-          }
-        } catch (parseError) {
-          console.error('解析settings.json失败:', parseError)
-          error.value = '解析配置文件失败'
-        }
+      if (settings && settings.env && typeof settings.env === 'object') {
+        currentSettings.value = { env: settings.env }
       } else {
         currentSettings.value = null
+        console.log('配置文件中缺少env字段，这是正常情况')
       }
     } catch (err) {
       console.error('加载当前设置失败:', err)
@@ -169,34 +129,30 @@ export const useEnvironmentStore = defineStore('environment', () => {
       isLoading.value = true
       error.value = null
 
-      // 前端处理JSON序列化，转换为标准格式
-      const envRecord: Record<string, string> = {}
-      environment.env.forEach(envVar => {
-        if (envVar.key.trim()) {
-          envRecord[envVar.key.trim()] = envVar.value
-        }
-      })
-
-      const settingsContent = {
-        env: envRecord
-      }
-
-      const jsonContent = JSON.stringify(settingsContent, null, 2)
-
-      // 获取Claude设置文件路径
-      const homeDir = await invoke<string>('get_home_dir')
-      const settingsPath = `${homeDir}/.claude/settings.json`
-
-      const result = await invoke<string>('write_file', {
-        filePath: settingsPath,
-        content: jsonContent
-      })
-
+      await FileOperations.applyClaudeEnvironment(environment.env)
       await loadCurrentSettings()
 
-      return result
+      return 'success'
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : '应用环境失败'
+      error.value = errorMessage
+      throw new Error(errorMessage)
+    } finally {
+      isLoading.value = false
+    }
+  }
+
+  const clearCurrentSettings = async () => {
+    try {
+      isLoading.value = true
+      error.value = null
+
+      await FileOperations.clearClaudeEnvironment()
+      currentSettings.value = null
+
+      return true
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : '清除配置失败'
       error.value = errorMessage
       throw new Error(errorMessage)
     } finally {
@@ -219,6 +175,7 @@ export const useEnvironmentStore = defineStore('environment', () => {
     updateEnvironment,
     deleteEnvironment,
     applyEnvironment,
+    clearCurrentSettings,
     clearError
   }
 })

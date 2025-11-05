@@ -8,13 +8,12 @@
 
       <form @submit.prevent="handleSubmit" class="environment-form">
         <div class="form-group">
-          <label for="name">环境名称 *</label>
+          <label for="name">环境名称 (备注)</label>
           <input
             id="name"
             v-model="formData.name"
             type="text"
-            required
-            placeholder="例如: MiniMax 环境"
+            placeholder="例如: MiniMax 环境 (可选)"
           />
         </div>
 
@@ -88,7 +87,7 @@
 <script setup lang="ts">
 import { ref, reactive, computed, onMounted } from 'vue'
 import { useEnvironmentStore } from '@/stores/environment'
-import type { ClaudeEnvironment, EnvironmentFormData, EnvVar } from '@/types/environment'
+import type { ClaudeEnvironment, EnvironmentFormData } from '@/types/environment'
 import { COMMON_ENV_VARS } from '@/types/environment'
 
 interface Props {
@@ -116,8 +115,7 @@ const formData = reactive<EnvironmentFormData>({
 })
 
 const isFormValid = computed(() => {
-  return formData.name.trim() !== '' &&
-         formData.env.length > 0 &&
+  return formData.env.length > 0 &&
          formData.env.some(envVar => envVar.key.trim() !== '')
 })
 
@@ -161,10 +159,6 @@ const addCommonVars = () => {
 
 const validateForm = (): boolean => {
   errors.value = []
-
-  if (!formData.name.trim()) {
-    errors.value.push('环境名称不能为空')
-  }
 
   if (formData.env.length === 0) {
     errors.value.push('至少需要添加一个环境变量')

@@ -2,26 +2,50 @@
   <div class="environment-list">
     <!-- 当前环境状态 -->
     <div class="current-status" v-if="environmentStore.currentSettings">
-      <h2>当前配置状态</h2>
       <div class="status-card">
         <div class="status-indicator active">
           <span class="status-dot"></span>
           <span>已配置环境变量</span>
         </div>
         <div class="status-details">
-          <p><strong>环境变量数量:</strong> {{ Object.keys(environmentStore.currentSettings.env).length }}</p>
-          <div class="current-env-vars">
-            <p v-for="envVar in getDisplayEnvVars(environmentStore.currentSettings.env)" :key="envVar.key" class="current-env-var">
-              <strong>{{ envVar.key }}:</strong>
-              <span>{{ envVar.value }}</span>
+          <div class="status-header">
+            <p>
+              <strong>环境变量数量:</strong>
+              {{ Object.keys(environmentStore.currentSettings.env).length }}
             </p>
+            <button
+              @click="removeCurrentConfig"
+              :disabled="environmentStore.isLoading"
+              class="btn btn-sm btn-danger"
+            >
+              移除配置
+            </button>
+          </div>
+          <div class="current-env-vars-table">
+            <table class="env-vars-table">
+              <tbody>
+                <tr
+                  v-for="envVar in getDisplayEnvVars(
+                    environmentStore.currentSettings.env
+                  )"
+                  :key="envVar.key"
+                  class="env-var-row"
+                >
+                  <td class="env-key-cell">
+                    {{ envVar.key }}
+                  </td>
+                  <td class="env-value-cell">
+                    {{ envVar.value }}
+                  </td>
+                </tr>
+              </tbody>
+            </table>
           </div>
         </div>
       </div>
     </div>
 
     <div class="current-status" v-else>
-      <h2>当前配置状态</h2>
       <div class="status-card">
         <div class="status-indicator inactive">
           <span class="status-dot"></span>
@@ -40,56 +64,61 @@
         </button>
       </div>
 
-      <div v-if="environmentStore.environments.length === 0" class="empty-state">
+      <div
+        v-if="environmentStore.environments.length === 0"
+        class="empty-state"
+      >
         <p>暂无环境配置</p>
         <button @click="showAddForm = true" class="btn btn-primary">
           创建第一个环境
         </button>
       </div>
 
-      <div v-else class="environment-cards">
-        <div
-          v-for="environment in environmentStore.environments"
-          :key="environment.id"
-          class="environment-card"
-        >
-          <div class="card-header">
-            <h3>{{ environment.name }}</h3>
-            <div class="card-actions">
-              <button
-                @click="applyEnvironment(environment)"
-                :disabled="environmentStore.isLoading"
-                class="btn btn-sm btn-primary"
-              >
-                应用
-              </button>
-              <button
-                @click="editEnvironment(environment)"
-                class="btn btn-sm btn-secondary"
-              >
-                编辑
-              </button>
-              <button
-                @click="deleteEnvironment(environment.id)"
-                class="btn btn-sm btn-danger"
-              >
-                删除
-              </button>
-            </div>
-          </div>
-          <div class="card-content">
-            <div class="env-preview">
-              <p><strong>环境变量数量:</strong> {{ environment.env.length }}</p>
-              <div class="key-env-vars">
-                <p v-for="envVar in getDisplayEnvVarsFromEnv(environment.env)" :key="envVar.key" class="key-env-var">
-                  <strong>{{ envVar.key }}:</strong>
-                  <span>{{ envVar.value }}</span>
-                </p>
-              </div>
-            </div>
-            <p><strong>更新时间:</strong> {{ formatDate(environment.updatedAt) }}</p>
-          </div>
-        </div>
+      <div v-else class="environment-table-container">
+        <table class="environment-table">
+          <thead>
+            <tr>
+              <th>名称</th>
+              <th>Base URL</th>
+              <th>操作</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr
+              v-for="environment in environmentStore.environments"
+              :key="environment.id"
+              class="environment-row"
+            >
+              <td class="name-cell">
+                {{ environment.name || "未命名" }}
+              </td>
+              <td class="url-cell">
+                {{ getBaseUrl(environment.env) || "未配置" }}
+              </td>
+              <td class="actions-cell">
+                <button
+                  @click="applyEnvironment(environment)"
+                  :disabled="environmentStore.isLoading"
+                  class="btn btn-sm btn-primary"
+                >
+                  应用
+                </button>
+                <button
+                  @click="editEnvironment(environment)"
+                  class="btn btn-sm btn-secondary"
+                >
+                  编辑
+                </button>
+                <button
+                  @click="deleteEnvironment(environment.id)"
+                  class="btn btn-sm btn-danger"
+                >
+                  删除
+                </button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
       </div>
     </div>
 
@@ -104,7 +133,9 @@
     <!-- 错误提示 -->
     <div v-if="environmentStore.error" class="error-toast">
       <p>{{ environmentStore.error }}</p>
-      <button @click="environmentStore.clearError()" class="btn-close">×</button>
+      <button @click="environmentStore.clearError()" class="btn-close">
+        ×
+      </button>
     </div>
 
     <!-- 加载状态 -->
@@ -116,96 +147,72 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
-import { useEnvironmentStore } from '@/stores/environment'
-import EnvironmentForm from './EnvironmentForm.vue'
-import type { ClaudeEnvironment, EnvVar } from '@/types/environment'
-import { formatDate } from '@/utils/validation'
+import { ref, onMounted } from "vue";
+import { useEnvironmentStore } from "@/stores/environment";
+import EnvironmentForm from "./EnvironmentForm.vue";
+import type { ClaudeEnvironment, EnvVar } from "@/types/environment";
 
-const environmentStore = useEnvironmentStore()
-const showAddForm = ref(false)
-const editingEnvironment = ref<ClaudeEnvironment | null>(null)
-
+const environmentStore = useEnvironmentStore();
+const showAddForm = ref(false);
+const editingEnvironment = ref<ClaudeEnvironment | null>(null);
 
 const applyEnvironment = async (environment: ClaudeEnvironment) => {
   try {
-    await environmentStore.applyEnvironment(environment)
+    await environmentStore.applyEnvironment(environment);
   } catch (error) {
-    console.error('应用环境失败:', error)
+    console.error("应用环境失败:", error);
   }
-}
+};
 
 const editEnvironment = (environment: ClaudeEnvironment) => {
-  editingEnvironment.value = environment
-}
+  editingEnvironment.value = environment;
+};
 
 const deleteEnvironment = async (id: string) => {
-  if (confirm('确定要删除这个环境配置吗？')) {
-    try {
-      await environmentStore.deleteEnvironment(id)
-    } catch (error) {
-      console.error('删除环境失败:', error)
-    }
+  try {
+    await environmentStore.deleteEnvironment(id);
+  } catch (error) {
+    console.error("删除环境失败:", error);
   }
-}
+};
 
 const handleSaveEnvironment = () => {
-  showAddForm.value = false
-  editingEnvironment.value = null
-}
+  showAddForm.value = false;
+  editingEnvironment.value = null;
+};
+
+const removeCurrentConfig = async () => {
+  try {
+    await environmentStore.clearCurrentSettings();
+  } catch (error) {
+    console.error("移除配置失败:", error);
+  }
+};
 
 const getDisplayEnvVars = (envRecord: Record<string, string>) => {
-  // 将HashMap转换为数组
-  const envVars = Object.entries(envRecord).map(([key, value]) => ({ key, value }))
+  // 将HashMap转换为数组，显示所有环境变量
+  return Object.entries(envRecord).map(([key, value]) => ({
+    key,
+    value,
+  }));
+};
 
-  // 只显示重要的环境变量，最多显示5个
-  const importantKeys = [
-    'ANTHROPIC_AUTH_TOKEN', 'ANTHROPIC_API_KEY', 'API_KEY',
-    'ANTHROPIC_BASE_URL', 'BASE_URL',
-    'ANTHROPIC_MODEL', 'MODEL'
-  ]
-
-  const importantVars = envVars.filter(envVar =>
-    importantKeys.some(key => envVar.key.includes(key))
-  )
-
-  // 如果重要变量少于3个，添加一些其他变量
-  const otherVars = envVars
-    .filter(envVar => !importantKeys.some(key => envVar.key.includes(key)))
-    .slice(0, Math.max(0, 3 - importantVars.length))
-
-  return [...importantVars, ...otherVars].slice(0, 5)
-}
-
-const getDisplayEnvVarsFromEnv = (envVars: EnvVar[]) => {
-  // 只显示重要的环境变量，最多显示5个
-  const importantKeys = [
-    'ANTHROPIC_AUTH_TOKEN', 'ANTHROPIC_API_KEY', 'API_KEY',
-    'ANTHROPIC_BASE_URL', 'BASE_URL',
-    'ANTHROPIC_MODEL', 'MODEL'
-  ]
-
-  const importantVars = envVars.filter(envVar =>
-    importantKeys.some(key => envVar.key.includes(key))
-  )
-
-  // 如果重要变量少于3个，添加一些其他变量
-  const otherVars = envVars
-    .filter(envVar => !importantKeys.some(key => envVar.key.includes(key)))
-    .slice(0, Math.max(0, 3 - importantVars.length))
-
-  return [...importantVars, ...otherVars].slice(0, 5)
-}
+const getBaseUrl = (envVars: EnvVar[]) => {
+  const baseUrlVar = envVars.find(
+    (envVar) => envVar.key === "ANTHROPIC_BASE_URL"
+  );
+  return baseUrlVar?.value || "";
+};
 
 const handleCancelForm = () => {
-  showAddForm.value = false
-  editingEnvironment.value = null
-}
+  showAddForm.value = false;
+  editingEnvironment.value = null;
+};
 
 onMounted(() => {
-  environmentStore.loadEnvironments()
-  environmentStore.loadCurrentSettings()
-})
+  environmentStore.loadEnvironments();
+  environmentStore.loadCurrentSettings();
+});
 </script>
 
 <style scoped>
@@ -247,21 +254,52 @@ onMounted(() => {
   background: #ef4444;
 }
 
+.status-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
 .status-details p {
   margin: 0.25rem 0;
   color: rgba(255, 255, 255, 0.8);
 }
 
-.current-env-vars {
+.current-env-vars-table {
   margin-top: 0.5rem;
-  padding-left: 0.5rem;
-  border-left: 2px solid rgba(74, 222, 128, 0.3);
+  border: 1px solid rgba(74, 222, 128, 0.3);
+  border-radius: 4px;
+  overflow: hidden;
 }
 
-.current-env-var {
-  margin: 0.15rem 0;
+.env-vars-table {
+  width: 100%;
+  border-collapse: collapse;
   font-size: 0.85rem;
-  color: rgba(255, 255, 255, 0.7);
+}
+
+.env-var-row:hover {
+  background: rgba(74, 222, 128, 0.1);
+}
+
+.env-key-cell {
+  padding: 0.5rem 0.75rem;
+  text-align: right;
+  font-weight: 600;
+  font-family: monospace;
+  background: rgba(74, 222, 128, 0.05);
+  border-right: 1px solid rgba(74, 222, 128, 0.2);
+  color: rgba(255, 255, 255, 0.9);
+  width: 250px;
+}
+
+.env-value-cell {
+  padding: 0.5rem 0.75rem;
+  text-align: left;
+  font-family: monospace;
+  color: rgba(255, 255, 255, 0.8);
+  word-break: break-all;
 }
 
 .section-header {
@@ -279,63 +317,73 @@ onMounted(() => {
   color: rgba(255, 255, 255, 0.6);
 }
 
-.environment-cards {
-  display: grid;
-  gap: 1rem;
-}
-
-.environment-card {
+.environment-table-container {
   background: rgba(255, 255, 255, 0.05);
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 8px;
-  padding: 1.5rem;
+  overflow: hidden;
   backdrop-filter: blur(10px);
+}
+
+.environment-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.environment-table th {
+  background: rgba(255, 255, 255, 0.1);
+  padding: 1rem;
+  text-align: left;
+  font-weight: 600;
+  color: #fff;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.environment-row {
   transition: all 0.3s ease;
 }
 
-.environment-card:hover {
+.environment-row:hover {
   background: rgba(255, 255, 255, 0.08);
-  border-color: rgba(255, 255, 255, 0.2);
 }
 
-
-.card-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 1rem;
+.environment-row td {
+  padding: 1rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  color: rgba(255, 255, 255, 0.9);
 }
 
-.card-header h3 {
-  margin: 0;
+.environment-row:last-child td {
+  border-bottom: none;
+}
+
+.name-cell {
+  font-weight: 600;
   color: #fff;
+  min-width: 75px;
+  text-align: left;
 }
 
-.card-actions {
-  display: flex;
-  gap: 0.5rem;
-}
-
-.card-content p {
-  margin: 0.25rem 0;
+.url-cell {
   color: rgba(255, 255, 255, 0.8);
+  font-family: monospace;
   font-size: 0.9rem;
+  word-break: break-all;
+  min-width: 200px;
+  text-align: left;
 }
 
-.env-preview {
-  margin-bottom: 0.5rem;
+.actions-cell {
+  width: 200px;
+  text-align: left;
 }
 
-.key-env-vars {
-  margin-top: 0.5rem;
-  padding-left: 0.5rem;
-  border-left: 2px solid rgba(59, 130, 246, 0.3);
+.actions-cell .btn {
+  margin-right: 0.5rem;
 }
 
-.key-env-var {
-  margin: 0.15rem 0;
-  font-size: 0.85rem;
-  color: rgba(255, 255, 255, 0.7);
+.actions-cell .btn:last-child {
+  margin-right: 0;
 }
 
 .btn {
@@ -386,7 +434,6 @@ onMounted(() => {
 .btn-danger:hover:not(:disabled) {
   background: #dc2626;
 }
-
 
 .error-toast {
   position: fixed;
@@ -439,7 +486,11 @@ onMounted(() => {
 }
 
 @keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
 }
 </style>
