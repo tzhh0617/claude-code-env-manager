@@ -9,10 +9,7 @@
         </div>
         <div class="status-details">
           <div class="status-header">
-            <p>
-              <strong>环境变量数量:</strong>
-              {{ Object.keys(environmentStore.currentSettings.env).length }}
-            </p>
+            <p>已配置环境变量</p>
             <button
               @click="removeCurrentConfig"
               :disabled="environmentStore.isLoading"
@@ -25,9 +22,7 @@
             <table class="env-vars-table">
               <tbody>
                 <tr
-                  v-for="envVar in getDisplayEnvVars(
-                    environmentStore.currentSettings.env
-                  )"
+                  v-for="envVar in displayEnvVars"
                   :key="envVar.key"
                   class="env-var-row"
                 >
@@ -62,6 +57,10 @@
         <button @click="showAddForm = true" class="btn btn-primary">
           添加环境
         </button>
+      </div>
+
+      <div class="info-tip">
+        <p>💡 提示：应用环境配置后，请重新打开新的终端窗口以便配置生效</p>
       </div>
 
       <div
@@ -147,7 +146,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from "vue";
+import { ref, computed, onMounted } from "vue";
 import { useEnvironmentStore } from "@/stores/environment";
 import EnvironmentForm from "./EnvironmentForm.vue";
 import type { ClaudeEnvironment, EnvVar } from "@/types/environment";
@@ -189,13 +188,14 @@ const removeCurrentConfig = async () => {
   }
 };
 
-const getDisplayEnvVars = (envRecord: Record<string, string>) => {
-  // 将HashMap转换为数组，显示所有环境变量
-  return Object.entries(envRecord).map(([key, value]) => ({
-    key,
-    value,
-  }));
-};
+const displayEnvVars = computed(() => {
+  return Object.entries(environmentStore.currentSettings?.env ?? {}).map(
+    ([key, value]) => ({
+      key,
+      value,
+    })
+  );
+});
 
 const getBaseUrl = (envVars: EnvVar[]) => {
   const baseUrlVar = envVars.find(

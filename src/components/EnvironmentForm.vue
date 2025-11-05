@@ -2,7 +2,7 @@
   <div class="form-overlay" @click="handleOverlayClick">
     <div class="form-container" @click.stop>
       <div class="form-header">
-        <h2>{{ isEdit ? '编辑环境' : '添加环境' }}</h2>
+        <h2>{{ isEdit ? "编辑环境" : "添加环境" }}</h2>
         <button @click="$emit('cancel')" class="btn-close">×</button>
       </div>
 
@@ -21,10 +21,25 @@
           <div class="section-header">
             <h3>环境变量配置</h3>
             <div class="section-actions">
-              <button type="button" @click="addCommonVars" class="btn btn-secondary btn-sm">
-                添加常用变量
+              <button
+                type="button"
+                @click="addMinimaxConfig"
+                class="btn btn-secondary btn-sm"
+              >
+                Minimax
               </button>
-              <button type="button" @click="addEnvVar" class="btn btn-primary btn-sm">
+              <button
+                type="button"
+                @click="addBigModelConfig"
+                class="btn btn-secondary btn-sm"
+              >
+                BigModel
+              </button>
+              <button
+                type="button"
+                @click="addEnvVar"
+                class="btn btn-primary btn-sm"
+              >
                 添加变量
               </button>
             </div>
@@ -42,7 +57,7 @@
                   type="text"
                   placeholder="变量名 (如: ANTHROPIC_AUTH_TOKEN)"
                   class="env-key-input"
-                  />
+                />
                 <input
                   v-model="envVar.value"
                   type="text"
@@ -57,7 +72,7 @@
                   删除
                 </button>
               </div>
-                </div>
+            </div>
 
             <div v-if="formData.env.length === 0" class="empty-env-vars">
               <p>暂无环境变量，点击"添加变量"开始配置</p>
@@ -73,11 +88,20 @@
       </form>
 
       <div class="form-actions">
-        <button type="button" @click="$emit('cancel')" class="btn btn-secondary">
+        <button
+          type="button"
+          @click="$emit('cancel')"
+          class="btn btn-secondary"
+        >
           取消
         </button>
-        <button type="submit" @click="handleSubmit" :disabled="isLoading || !isFormValid" class="btn btn-primary">
-          {{ isLoading ? '保存中...' : (isEdit ? '更新' : '创建') }}
+        <button
+          type="submit"
+          @click="handleSubmit"
+          :disabled="isLoading || !isFormValid"
+          class="btn btn-primary"
+        >
+          {{ isLoading ? "保存中..." : isEdit ? "更新" : "创建" }}
         </button>
       </div>
     </div>
@@ -85,134 +109,151 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, computed, onMounted } from 'vue'
-import { useEnvironmentStore } from '@/stores/environment'
-import type { ClaudeEnvironment, EnvironmentFormData } from '@/types/environment'
-import { COMMON_ENV_VARS } from '@/types/environment'
+import { ref, reactive, computed, onMounted } from "vue";
+import { useEnvironmentStore } from "@/stores/environment";
+import type {
+  ClaudeEnvironment,
+  EnvironmentFormData,
+} from "@/types/environment";
+import { COMMON_ENV_VARS } from "@/types/environment";
 
 interface Props {
-  environment?: ClaudeEnvironment | null
+  environment?: ClaudeEnvironment | null;
 }
 
 interface Emits {
-  (e: 'save'): void
-  (e: 'cancel'): void
+  (e: "save"): void;
+  (e: "cancel"): void;
 }
 
+const props = defineProps<Props>();
+const emit = defineEmits<Emits>();
 
-const props = defineProps<Props>()
-const emit = defineEmits<Emits>()
+const environmentStore = useEnvironmentStore();
 
-const environmentStore = useEnvironmentStore()
-
-const isEdit = computed(() => !!props.environment)
-const isLoading = ref(false)
-const errors = ref<string[]>([])
+const isEdit = computed(() => !!props.environment);
+const isLoading = ref(false);
+const errors = ref<string[]>([]);
 
 const formData = reactive<EnvironmentFormData>({
-  name: '',
-  env: []
-})
+  name: "",
+  env: [],
+});
 
 const isFormValid = computed(() => {
-  return formData.env.length > 0 &&
-         formData.env.some(envVar => envVar.key.trim() !== '')
-})
+  return (
+    formData.env.length > 0 &&
+    formData.env.some((envVar) => envVar.key.trim() !== "")
+  );
+});
 
 const resetForm = () => {
-  formData.name = ''
-  formData.env = []
-  errors.value = []
-}
+  formData.name = "";
+  formData.env = [];
+  errors.value = [];
+};
 
 const loadEnvironmentData = () => {
   if (props.environment) {
-    formData.name = props.environment.name
-    formData.env = [...props.environment.env]
-  } else {
-    // 默认添加一些常用的环境变量
-    addCommonVars()
+    formData.name = props.environment.name;
+    formData.env = [...props.environment.env];
   }
-}
+  // 新建环境时不自动添加变量，让用户手动选择配置
+};
 
 const addEnvVar = () => {
-  formData.env.push({ key: '', value: '' })
-}
+  formData.env.push({ key: "", value: "" });
+};
 
 const removeEnvVar = (index: number) => {
-  formData.env.splice(index, 1)
-}
+  formData.env.splice(index, 1);
+};
 
-const addCommonVars = () => {
-  const existingKeys = new Set(formData.env.map(env => env.key))
+const addMinimaxConfig = () => {
+  formData.env = [
+    { key: "ANTHROPIC_BASE_URL", value: "https://api.minimaxi.com/anthropic" },
+    { key: "ANTHROPIC_AUTH_TOKEN", value: "<MINIMAX_API_KEY>" },
+    { key: "API_TIMEOUT_MS", value: "3000000" },
+    { key: "CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC", value: "1" },
+    { key: "ANTHROPIC_MODEL", value: "MiniMax-M2" },
+    { key: "ANTHROPIC_SMALL_FAST_MODEL", value: "MiniMax-M2" },
+    { key: "ANTHROPIC_DEFAULT_SONNET_MODEL", value: "MiniMax-M2" },
+    { key: "ANTHROPIC_DEFAULT_OPUS_MODEL", value: "MiniMax-M2" },
+    { key: "ANTHROPIC_DEFAULT_HAIKU_MODEL", value: "MiniMax-M2" },
+  ];
+};
 
-  COMMON_ENV_VARS.forEach(commonVar => {
-    if (!existingKeys.has(commonVar.key)) {
-      formData.env.push({
-        key: commonVar.key,
-        value: commonVar.defaultValue
-      })
-    }
-  })
-}
-
+const addBigModelConfig = () => {
+  formData.env = [
+    { key: "ANTHROPIC_AUTH_TOKEN", value: "your_zhipu_api_key" },
+    {
+      key: "ANTHROPIC_BASE_URL",
+      value: "https://open.bigmodel.cn/api/anthropic",
+    },
+    { key: "API_TIMEOUT_MS", value: "3000000" },
+    { key: "CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC", value: "1" },
+    { key: "ANTHROPIC_DEFAULT_HAIKU_MODEL", value: "glm-4.5-air" },
+    { key: "ANTHROPIC_DEFAULT_SONNET_MODEL", value: "glm-4.6" },
+    { key: "ANTHROPIC_DEFAULT_OPUS_MODEL", value: "glm-4.6" },
+  ];
+};
 
 const validateForm = (): boolean => {
-  errors.value = []
+  errors.value = [];
 
   if (formData.env.length === 0) {
-    errors.value.push('至少需要添加一个环境变量')
+    errors.value.push("至少需要添加一个环境变量");
   }
 
   // 检查是否有有效的环境变量
-  const validEnvVars = formData.env.filter(envVar => envVar.key.trim())
+  const validEnvVars = formData.env.filter((envVar) => envVar.key.trim());
   if (validEnvVars.length === 0) {
-    errors.value.push('至少需要一个有效的环境变量')
+    errors.value.push("至少需要一个有效的环境变量");
   }
 
-  return errors.value.length === 0
-}
+  return errors.value.length === 0;
+};
 
 const handleSubmit = async () => {
   if (!validateForm()) {
-    return
+    return;
   }
 
   try {
-    isLoading.value = true
+    isLoading.value = true;
 
     // 过滤掉空的环境变量
-    const validEnvVars = formData.env.filter(envVar => envVar.key.trim())
+    const validEnvVars = formData.env.filter((envVar) => envVar.key.trim());
 
     if (isEdit.value && props.environment) {
       await environmentStore.updateEnvironment(props.environment.id, {
         ...formData,
-        env: validEnvVars
-      })
+        env: validEnvVars,
+      });
     } else {
       await environmentStore.addEnvironment({
         ...formData,
-        env: validEnvVars
-      })
+        env: validEnvVars,
+      });
     }
 
-    emit('save')
+    emit("save");
   } catch (error) {
-    console.error('保存环境失败:', error)
-    errors.value = ['保存失败，请重试']
+    console.error("保存环境失败:", error);
+    errors.value = ["保存失败，请重试"];
   } finally {
-    isLoading.value = false
+    isLoading.value = false;
   }
-}
+};
 
 const handleOverlayClick = () => {
-  emit('cancel')
-}
+  emit("cancel");
+};
 
 onMounted(() => {
-  resetForm()
-  loadEnvironmentData()
-})
+  resetForm();
+  loadEnvironmentData();
+});
 </script>
 
 <style scoped>
@@ -350,7 +391,6 @@ onMounted(() => {
   width: 60px;
 }
 
-
 .empty-env-vars {
   text-align: center;
   padding: 2rem;
@@ -385,7 +425,6 @@ input:focus {
 input::placeholder {
   color: rgba(255, 255, 255, 0.4);
 }
-
 
 .error-messages {
   background: rgba(239, 68, 68, 0.1);
